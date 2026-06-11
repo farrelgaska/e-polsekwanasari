@@ -7,6 +7,32 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.get("/api/preview-laporan", (req, res) => {
+  const list = readDB();
+
+  if (!list.length) {
+    return res.json({
+      success: true,
+      data: {
+        kode: "Belum Ada Laporan",
+        kategori: "-",
+        status: "Menunggu Verifikasi"
+      }
+    });
+  }
+
+  const terbaru = list[0];
+
+  res.json({
+    success: true,
+    data: {
+      kode: terbaru.kode,
+      kategori: terbaru.kategori,
+      status: terbaru.status
+    }
+  });
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Backend berjalan di port ${PORT}`);
 });
@@ -337,6 +363,32 @@ app.get("/api/stats", requireAdmin, (req, res) => {
       ditolak: countByStatus("Ditolak"),
       topKategori,
       terbaru: list.slice(0, 5)
+    }
+  });
+});
+
+app.get("/api/preview-laporan", (req, res) => {
+  const list = readDB();
+
+  if (!list.length) {
+    return res.json({
+      success: true,
+      data: {
+        kode: "Belum Ada Laporan",
+        kategori: "-",
+        status: "Menunggu Verifikasi"
+      }
+    });
+  }
+
+  const terbaru = list[0];
+
+  res.json({
+    success: true,
+    data: {
+      kode: terbaru.kode,
+      kategori: terbaru.kategori,
+      status: terbaru.status
     }
   });
 });

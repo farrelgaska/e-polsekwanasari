@@ -1,5 +1,41 @@
 const API_URL = "https://farrelgaskagithubio-production.up.railway.app/api";
 
+function getStatusClass(status) {
+  if (status === "Diproses") return "badge-proses";
+  if (status === "Selesai") return "badge-selesai";
+  if (status === "Ditolak") return "badge-tolak";
+  return "badge-wait";
+}
+
+function renderPreviewLaporan(data) {
+  const kodeEl = document.getElementById("preview-kode");
+  const kategoriEl = document.getElementById("preview-kategori");
+  const statusEl = document.getElementById("preview-status");
+
+  if (!kodeEl || !kategoriEl || !statusEl) return;
+
+  kodeEl.textContent = data.kode || "Belum Ada Laporan";
+  kategoriEl.textContent = data.kategori || "-";
+  statusEl.textContent = data.status || "Menunggu Verifikasi";
+
+  statusEl.className = getStatusClass(data.status);
+}
+
+async function loadPreviewLaporan() {
+  try {
+    const response = await fetch(`${API_URL}/preview-laporan`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Gagal memuat preview laporan.");
+    }
+
+    renderPreviewLaporan(result.data);
+  } catch (error) {
+    console.error("Preview laporan error:", error);
+  }
+}
+
 function showPage(name) {
   document.querySelectorAll(".page").forEach((p) => p.classList.remove("active"));
 
@@ -127,6 +163,8 @@ async function kirimPengaduan(event) {
     }
 
     const kode = result.data.kode;
+
+    renderPreviewLaporan(result.data);
 
     const kodeBox = document.querySelector("#page-sukses .kode-val");
 
