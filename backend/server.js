@@ -27,6 +27,9 @@ const ADMIN_USERNAME = "admin_wanasari";
 const ADMIN_PASSWORD = "admin123";
 const ADMIN_TOKEN = "demo-admin-token-wanasari";
 
+const TELEGRAM_BOT_TOKEN = "8826068957:AAHRfhUV_qFkfN0kd3s3pee2xeZESlOwO9E";
+const TELEGRAM_ADMIN_CHAT_ID = "5880277259";
+
 function readDB() {
   return JSON.parse(fs.readFileSync(DB_FILE, "utf-8"));
 }
@@ -121,8 +124,8 @@ function escapeHtml(value) {
 }
 
 async function sendTelegramNotification(laporan) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_ADMIN_CHAT_ID;
+  const token = TELEGRAM_BOT_TOKEN;
+  const chatId = TELEGRAM_ADMIN_CHAT_ID;
 
   if (!token || !chatId) {
     console.log("Telegram belum dikonfigurasi. Notifikasi dilewati.");
