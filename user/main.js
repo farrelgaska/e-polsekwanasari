@@ -344,3 +344,48 @@ document.addEventListener("DOMContentLoaded", () => {
     hasil.style.display = "none";
   }
 });
+
+// ======================================================
+// LOAD KATEGORI USER DARI BACKEND
+// ======================================================
+
+async function loadKategoriPengaduanUser() {
+  const select = document.querySelector('select[name="kategori"], #kategori-pengaduan');
+
+  if (!select) return;
+
+  try {
+    const response = await fetch(`${API_URL}/kategori?status=aktif`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Gagal mengambil kategori.");
+    }
+
+    const kategoriAktif = result.data || [];
+
+    select.innerHTML = `<option value="">Pilih Kategori</option>`;
+
+    kategoriAktif.forEach((item) => {
+      const option = document.createElement("option");
+      option.value = item.nama;
+      option.textContent = item.nama;
+      select.appendChild(option);
+    });
+
+    const sudahAdaLainnya = kategoriAktif.some((item) => item.nama.toLowerCase() === "lainnya");
+
+    if (!sudahAdaLainnya) {
+      const optionLainnya = document.createElement("option");
+      optionLainnya.value = "Lainnya";
+      optionLainnya.textContent = "Lainnya";
+      select.appendChild(optionLainnya);
+    }
+  } catch (error) {
+    console.error("Gagal load kategori user:", error);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadKategoriPengaduanUser();
+});

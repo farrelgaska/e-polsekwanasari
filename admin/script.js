@@ -1274,3 +1274,283 @@ document.addEventListener("DOMContentLoaded", () => {
     setupProfilPage();
   });
 })();
+
+// ======================================================
+// PATCH KATEGORI ADMIN TERHUBUNG BACKEND
+// ======================================================
+
+(() => {
+  const API_KATEGORI = "https://farrelgaskagithubio-production.up.railway.app/api";
+  const ADMIN_TOKEN_KATEGORI = "demo-admin-token-wanasari";
+
+  function getAuthHeaders() {
+    const token =
+      localStorage.getItem("adminToken") ||
+      localStorage.getItem("token") ||
+      ADMIN_TOKEN_KATEGORI;
+
+    return {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    };
+  }
+
+  function showAdminToast(message) {
+    if (typeof showToast === "function") {
+      showToast(message);
+    } else {
+      alert(message);
+    }
+  }
+
+  function escapeAdminText(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  async function fetchKategoriAdmin() {
+    const response = await fetch(`${API_KATEGORI}/kategori`);
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.message || "Gagal mengambil kategori.");
+    }
+
+    return result.data || [];
+  }
+
+  async function tambahKategoriAdmin() {
+    const nama = prompt("Masukkan nama kategori baru:");
+    if (!nama || !nama.trim()) return;
+
+    const subjudul = prompt("Masukkan subjudul kategori:", "Kategori pengaduan masyarakat") || "";
+    const deskripsi = prompt("Masukkan deskripsi kategori:");
+    if (!deskripsi || !deskripsi.trim()) {
+      showAdminToast("Deskripsi kategori wajib diisi.");
+      return;
+    }
+
+    const status = confirm("Aktifkan kategori ini?\nOK = Aktif\nCancel = Nonaktif")
+      ? "Aktif"
+      : "Nonaktif";
+
+    const response = await fetch(`${API_KATEGORI}/kategori`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        nama,
+        subjudul,
+        deskripsi,
+        status
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      showAdminToast(result.message || "Gagal menambah kategori.");
+      return;
+    }
+
+    showAdminToast("Kategori berhasil ditambahkan.");
+    await renderKategoriAdmin();
+  }
+
+  async function editKategoriAdmin(id, item) {
+    const nama = prompt("Edit nama kategori:", item.nama);
+    if (!nama || !nama.trim()) return;
+
+    const subjudul = prompt("Edit subjudul kategori:", item.subjudul || "") || "";
+    const deskripsi = prompt("Edit deskripsi kategori:", item.deskripsi || "");
+    if (!deskripsi || !deskripsi.trim()) {
+      showAdminToast("Deskripsi kategori wajib diisi.");
+      return;
+    }
+
+    const status = confirm("Aktifkan kategori ini?\nOK = Aktif\nCancel = Nonaktif")
+      ? "Aktif"
+      : "Nonaktif";
+
+    const response = await fetch(`${API_KATEGORI}/kategori/${id}`, {
+      method: "PATCH",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        nama,
+        subjudul,
+        deskripsi,
+        status
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      showAdminToast(result.message || "Gagal mengubah kategori.");
+      return;
+    }
+
+    showAdminToast("Kategori berhasil diperbarui.");
+    await renderKategoriAdmin();
+  }
+
+  async function hapusKategoriAdmin(id, nama) {
+    const yakin = confirm(`Hapus kategori "${nama}"?`);
+    if (!yakin) return;
+
+    const response = await fetch(`${API_KATEGORI}/kategori/${id}`, {
+      method: "DELETE",
+      headers: getAuthHeaders()
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      showAdminToast(result.message || "Gagal menghapus kategori.");
+      return;
+    }
+
+    showAdminToast("Kategori berhasil dihapus.");
+    await renderKategoriAdmin();
+  }
+
+  function updateStatKategoriAdmin(data) {
+    const page = document.getElementById("page-kategori");
+    if (!page) return;
+
+    const total = data.length;
+    const aktif = data.filter((item) => item.status === "Aktif").length;
+
+    const statValues = page.querySelectorAll(".ks-value");
+
+    if (statValues[0]) statValues[0].textContent = total;
+    if (statValues[1]) statValues[1].textContent = aktif;
+    if (statValues[2]) statValues[2].textContent = data[0]?.nama || "-";
+
+    const paginationText = page.querySelector(".pagination-row span");
+    if (paginationText) {
+      paginationText.textContent = `Menampilkan 1-${Math.min(total, 5)} dari ${total} kategori`;
+    }
+  }
+
+  async function renderKategoriAdmin() {
+    const page = document.getElementById("page-kategori");
+    if (!page) return;
+
+    const tbody = page.querySelector("tbody");
+    if (!tbody) return;
+
+    try {
+      const data = await fetchKategoriAdmin();
+
+      tbody.innerHTML = data.map((item, index) => `
+        <tr data-id="${escapeAdminText(item.id)}">
+          <td>${index + 1}</td>
+
+          <td>
+            <div style="font-weight:700;">${escapeAdminText(item.nama)}</div>
+            <div style="font-size:11px;color:var(--gray-600);">${escapeAdminText(item.subjudul)}</div>
+          </td>
+
+          <td style="color:var(--gray-600);">${escapeAdminText(item.deskripsi)}</td>
+
+          <td>
+            <span class="badge ${item.status === "Aktif" ? "badge-aktif" : "badge-nonaktif"}">
+              ${escapeAdminText(item.status)}
+            </span>
+          </td>
+
+          <td>
+            <div class="action-icons">
+              <button class="gray js-edit-kategori" type="button" title="Edit kategori">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+
+              <button class="red js-delete-kategori" type="button" title="Hapus kategori">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" width="16" height="16">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14H6L5 6"/>
+                  <path d="M9 6V4h6v2"/>
+                </svg>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `).join("");
+
+      tbody.dataset.kategori = JSON.stringify(data);
+      updateStatKategoriAdmin(data);
+    } catch (error) {
+      console.error(error);
+      showAdminToast("Gagal memuat data kategori.");
+    }
+  }
+
+  function filterKategoriAdmin() {
+    const page = document.getElementById("page-kategori");
+    if (!page) return;
+
+    const keyword = page.querySelector(".search-box")?.value.toLowerCase().trim() || "";
+
+    page.querySelectorAll("tbody tr").forEach((row) => {
+      row.style.display = row.innerText.toLowerCase().includes(keyword) ? "" : "none";
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const page = document.getElementById("page-kategori");
+    if (!page) return;
+
+    renderKategoriAdmin();
+
+    const oldTambahBtn = page.querySelector(".btn-tambah");
+    if (oldTambahBtn) {
+      const newTambahBtn = oldTambahBtn.cloneNode(true);
+      oldTambahBtn.replaceWith(newTambahBtn);
+
+      newTambahBtn.addEventListener("click", tambahKategoriAdmin);
+    }
+
+    const searchBox = page.querySelector(".search-box");
+    if (searchBox) {
+      searchBox.addEventListener("input", filterKategoriAdmin);
+      searchBox.addEventListener("keyup", filterKategoriAdmin);
+    }
+
+    const filterBtn = page.querySelector(".btn-filter");
+    if (filterBtn) {
+      filterBtn.addEventListener("click", filterKategoriAdmin);
+    }
+
+    page.addEventListener("click", async (event) => {
+      const editBtn = event.target.closest(".js-edit-kategori");
+      const deleteBtn = event.target.closest(".js-delete-kategori");
+
+      if (!editBtn && !deleteBtn) return;
+
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      const row = event.target.closest("tr");
+      if (!row) return;
+
+      const id = row.dataset.id;
+      const data = JSON.parse(page.querySelector("tbody").dataset.kategori || "[]");
+      const item = data.find((kategori) => kategori.id === id);
+
+      if (!item) return;
+
+      if (editBtn) {
+        await editKategoriAdmin(id, item);
+      }
+
+      if (deleteBtn) {
+        await hapusKategoriAdmin(id, item.nama);
+      }
+    }, true);
+  });
+})();
