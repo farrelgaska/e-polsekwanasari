@@ -9,53 +9,10 @@ const app = express();
 const DATA_DIR = path.join(__dirname, "data");
 const UPLOAD_DIR = path.join(__dirname, "uploads");
 const DB_FILE = path.join(DATA_DIR, "pengaduan.json");
-const KATEGORI_FILE = path.join(DATA_DIR, "kategori.json");
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
 if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR);
 if (!fs.existsSync(DB_FILE)) fs.writeFileSync(DB_FILE, "[]", "utf-8");
-
-const DEFAULT_KATEGORI = [
-  {
-    id: "kat-1",
-    nama: "Kehilangan Barang",
-    subjudul: "Pelaporan barang hilang/tercecer",
-    deskripsi: "Layanan untuk masyarakat yang kehilangan barang di tempat umum.",
-    status: "Aktif"
-  },
-  {
-    id: "kat-2",
-    nama: "Gangguan Keamanan",
-    subjudul: "Laporan kriminal/keributan",
-    deskripsi: "Pelaporan tindakan kriminalitas, perkelahian atau ancaman.",
-    status: "Aktif"
-  },
-  {
-    id: "kat-3",
-    nama: "Pungutan Liar",
-    subjudul: "Laporan penyalahgunaan wewenang",
-    deskripsi: "Aduan masyarakat terkait pemerasan atau pungutan tidak resmi.",
-    status: "Aktif"
-  },
-  {
-    id: "kat-4",
-    nama: "Kecelakaan Lalu Lintas",
-    subjudul: "Informasi laka lantas jalan raya",
-    deskripsi: "Laporan terjadinya kecelakaan di wilayah hukum Polsek Wanasari.",
-    status: "Nonaktif"
-  },
-  {
-    id: "kat-5",
-    nama: "Pelayanan Publik",
-    subjudul: "Aduan terkait pelayanan kantor",
-    deskripsi: "Saran atau keluhan mengenai kualitas pelayanan kepolisian.",
-    status: "Aktif"
-  }
-];
-
-if (!fs.existsSync(KATEGORI_FILE)) {
-  fs.writeFileSync(KATEGORI_FILE, JSON.stringify(DEFAULT_KATEGORI, null, 2), "utf-8");
-}
 
 app.use(cors());
 app.use(express.json());
@@ -71,14 +28,6 @@ function readDB() {
 
 function writeDB(data) {
   fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
-}
-
-function readKategoriDB() {
-  return JSON.parse(fs.readFileSync(KATEGORI_FILE, "utf-8"));
-}
-
-function writeKategoriDB(data) {
-  fs.writeFileSync(KATEGORI_FILE, JSON.stringify(data, null, 2), "utf-8");
 }
 
 function clean(value) {
@@ -202,118 +151,6 @@ app.get("/", (req, res) => {
 app.get("/", (req, res) => {
   res.json({
     message: "Backend E-Pengaduan Polsek Wanasari aktif."
-  });
-});
-
-// TARUH API KATEGORI DI SINI
-app.get("/api/kategori", (req, res) => {
-  const { status } = req.query;
-
-  let list = readKategoriDB();
-
-  if (status === "aktif") {
-    list = list.filter((item) => item.status === "Aktif");
-  }
-
-  res.json({
-    success: true,
-    total: list.length,
-    data: list
-  });
-});
-
-app.post("/api/kategori", requireAdmin, (req, res) => {
-  const { nama, subjudul, deskripsi, status } = req.body;
-
-  if (!clean(nama) || !clean(deskripsi)) {
-    return res.status(400).json({
-      success: false,
-      message: "Nama kategori dan deskripsi wajib diisi."
-    });
-  }
-
-  const allowedStatus = ["Aktif", "Nonaktif"];
-  const statusFinal = allowedStatus.includes(status) ? status : "Aktif";
-
-  const list = readKategoriDB();
-
-  const kategoriBaru = {
-    id: Date.now().toString(),
-    nama: clean(nama),
-    subjudul: clean(subjudul) || "Kategori pengaduan masyarakat",
-    deskripsi: clean(deskripsi),
-    status: statusFinal
-  };
-
-  list.push(kategoriBaru);
-  writeKategoriDB(list);
-
-  res.status(201).json({
-    success: true,
-    message: "Kategori berhasil ditambahkan.",
-    data: kategoriBaru
-  });
-});
-
-app.patch("/api/kategori/:id", requireAdmin, (req, res) => {
-  const { id } = req.params;
-  const { nama, subjudul, deskripsi, status } = req.body;
-
-  const list = readKategoriDB();
-  const index = list.findIndex((item) => item.id === id);
-
-  if (index === -1) {
-    return res.status(404).json({
-      success: false,
-      message: "Kategori tidak ditemukan."
-    });
-  }
-
-  if (!clean(nama) || !clean(deskripsi)) {
-    return res.status(400).json({
-      success: false,
-      message: "Nama kategori dan deskripsi wajib diisi."
-    });
-  }
-
-  const allowedStatus = ["Aktif", "Nonaktif"];
-
-  list[index] = {
-    ...list[index],
-    nama: clean(nama),
-    subjudul: clean(subjudul) || "Kategori pengaduan masyarakat",
-    deskripsi: clean(deskripsi),
-    status: allowedStatus.includes(status) ? status : list[index].status
-  };
-
-  writeKategoriDB(list);
-
-  res.json({
-    success: true,
-    message: "Kategori berhasil diperbarui.",
-    data: list[index]
-  });
-});
-
-app.delete("/api/kategori/:id", requireAdmin, (req, res) => {
-  const { id } = req.params;
-
-  const list = readKategoriDB();
-  const kategori = list.find((item) => item.id === id);
-
-  if (!kategori) {
-    return res.status(404).json({
-      success: false,
-      message: "Kategori tidak ditemukan."
-    });
-  }
-
-  const filtered = list.filter((item) => item.id !== id);
-  writeKategoriDB(filtered);
-
-  res.json({
-    success: true,
-    message: "Kategori berhasil dihapus."
   });
 });
 
